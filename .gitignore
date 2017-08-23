@@ -1,0 +1,5 @@
+.idea/
+*.iml
+telegram.properties
+app.properties
+target/
