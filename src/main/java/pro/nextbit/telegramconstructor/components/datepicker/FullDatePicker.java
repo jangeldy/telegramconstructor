@@ -145,8 +145,12 @@ public class FullDatePicker {
                                 .set("step", step)
                     );
                 } else {
+
+                    String dayStr = String.valueOf(day);
+                    if (day < 10) dayStr = "0" + dayStr;
+
                     keyboard.addButton(
-                            String.valueOf(day),
+                            dayStr,
                             Json.set("dp_sel", day + monthYear)
                                 .set("step", step)
                     );
