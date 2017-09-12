@@ -126,6 +126,7 @@ public class FullDatePicker {
 
         DateFormat df = new SimpleDateFormat("dd.MM.yyyy");
         String monthYear = df.format(tempDate.toDate()).substring(2);
+        String today = df.format(new Date());
 
         for (LinkedList<Integer> weekDates : monthDates) {
             keyboard.next(7);
@@ -146,12 +147,15 @@ public class FullDatePicker {
                     );
                 } else {
 
+                    String dte = day + monthYear;
                     String dayStr = String.valueOf(day);
-                    if (day < 10) dayStr = "0" + dayStr;
+
+                    if (day < 10) dte = "0" + day + monthYear;
+                    if (dte.equals(today)) dayStr = "• " + dayStr + " •";
 
                     keyboard.addButton(
                             dayStr,
-                            Json.set("dp_sel", day + monthYear)
+                            Json.set("dp_sel", dte)
                                 .set("step", step)
                     );
                 }
