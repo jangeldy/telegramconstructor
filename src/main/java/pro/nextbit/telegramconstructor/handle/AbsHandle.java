@@ -78,6 +78,7 @@ public class AbsHandle {
             throw new RuntimeException("Error in redirect command. Step can not be empty");
         }
 
+        this.step = step;
         redirectMapping = StepMapping.getMappingByStep(step);
         redirectMapping.setRedirect(true);
 
