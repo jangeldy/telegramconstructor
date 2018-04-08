@@ -27,6 +27,11 @@ public class IKeyboard {
     }
 
 
+    public int size() {
+        return inlineTables.size() + inlineList.size();
+    }
+
+
     public InlineKeyboardMarkup generate() {
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
         for (List<List<InlineKeyboardButton>> list:inlineTables){

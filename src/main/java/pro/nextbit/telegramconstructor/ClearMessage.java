@@ -15,21 +15,45 @@ public class ClearMessage {
     private static Map<Long, List<Integer>> msgClearedLater = new HashMap<>();
     private static Map<Long, List<Integer>> msgClearedOnClick = new HashMap<>();
 
-    public void clear(Message message) {
+
+    /**
+     * Для очистки сообщения
+     * @param message - сообщение
+     */
+    public static void clear(Message message) {
         set(message, msgMap);
     }
 
-    public void clearLater(Message message){
+
+    /**
+     * Для очистки сообщения
+     * @param message - сообщение
+     */
+    public static void clearLater(Message message){
         set(message, msgClearedLater);
     }
 
-    public void clearOnClick(Message message) { set(message, msgClearedOnClick);}
 
-    public void remove(TelegramLongPollingBot bot, Message message) {
-        remove(bot, message.getChatId(), get(message.getChatId()));
-        remove(bot, message.getChatId(), getAsLater(message));
-        remove(bot, message.getChatId(), getOnClick(message));
+    /**
+     * Для очистки сообщения
+     * при взаомодействии пользователя с message
+     * @param message - сообщение
+     */
+    public static void clearOnClick(Message message) { set(message, msgClearedOnClick);}
+
+
+    /**
+     * Для очистки сообщения
+     * @param message - сообщение
+     */
+    public static void removeAll(TelegramLongPollingBot bot, Message message) {
+        ClearMessage clearMessage = new ClearMessage();
+        clearMessage.remove(bot, message.getChatId(), clearMessage.get(message.getChatId()));
+        clearMessage.remove(bot, message.getChatId(), clearMessage.getAsLater(message));
+        clearMessage.remove(bot, message.getChatId(), clearMessage.getOnClick(message));
     }
+
+
 
     private List<Integer> get(long chatId) {
         List<Integer> list = new ArrayList<>();
@@ -74,7 +98,7 @@ public class ClearMessage {
         return new ArrayList<>();
     }
 
-    private void set(Message message, Map<Long, List<Integer>> map) {
+    private static void set(Message message, Map<Long, List<Integer>> map) {
         if (map.containsKey(message.getChatId())){
             List<Integer> list = map.get(message.getChatId());
             list.add(message.getMessageId());
@@ -85,7 +109,6 @@ public class ClearMessage {
         }
     }
 
-
     private void remove(TelegramLongPollingBot bot, long chatId, List<Integer> list) {
 
         if (list != null) {
@@ -94,7 +117,7 @@ public class ClearMessage {
                     DeleteMessage deleteMessage = new DeleteMessage();
                     deleteMessage.setChatId(String.valueOf(chatId));
                     deleteMessage.setMessageId(messageId);
-                    bot.deleteMessage(deleteMessage);
+                    bot.execute(deleteMessage);
                 } catch (Exception ignore) {}
             }
         }

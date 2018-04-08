@@ -57,7 +57,7 @@ public class FullDatePicker {
 
             if (isEdit) {
 
-                bot.editMessageReplyMarkup(
+                bot.execute(
                         new EditMessageReplyMarkup()
                                 .setReplyMarkup(generate())
                                 .setMessageId(message.getMessageId())
@@ -66,13 +66,13 @@ public class FullDatePicker {
 
             } else {
 
-                Message msg = bot.sendMessage(
+                Message msg = bot.execute(
                         new SendMessage()
                                 .setText(messageText)
                                 .setChatId(message.getChatId())
                                 .setReplyMarkup(generate())
                 );
-                new ClearMessage().clearLater(msg);
+                ClearMessage.clearLater(msg);
             }
 
             throw new RuntimeException("ignore");
@@ -174,12 +174,12 @@ public class FullDatePicker {
         if (queryData.containsKey("dp_w")) {
             week = queryData.getInt("dp_w");
             selectedDate = new DateTime(cal.getTime());
-            new ClearMessage().remove(bot, message);
+            ClearMessage.removeAll(bot, message);
         }
 
         if (queryData.containsKey("dp_sel")) {
             selectedDate = new DateTime(queryData.getDate("dp_sel"));
-            new ClearMessage().remove(bot, message);
+            ClearMessage.removeAll(bot, message);
         }
 
         if (queryData.containsKey("dp_dt")) {

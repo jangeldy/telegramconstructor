@@ -1,7 +1,5 @@
 package pro.nextbit.telegramconstructor.handle;
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
@@ -9,14 +7,14 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import pro.nextbit.telegramconstructor.ClearMessage;
 import pro.nextbit.telegramconstructor.GlobalParam;
 import pro.nextbit.telegramconstructor.StepParam;
-import pro.nextbit.telegramconstructor.accesslevel.AccessLevel;
+import pro.nextbit.telegramconstructor.components.keyboard.IKeyboard;
+import pro.nextbit.telegramconstructor.components.keyboard.Keyboard;
 import pro.nextbit.telegramconstructor.database.DataRec;
 import pro.nextbit.telegramconstructor.stepmapping.Mapping;
 import pro.nextbit.telegramconstructor.stepmapping.StepMapping;
 
 public class AbsHandle {
 
-    public Logger log = LogManager.getLogger(AbsHandle.class);
     public TelegramLongPollingBot bot;
     public Update update;
 
@@ -24,13 +22,32 @@ public class AbsHandle {
     public String step;
     public String inputText;
     public DataRec queryData;
-    public AccessLevel accessLevel;
     public DataRec param;
     public long chatId;
     public Message message;
 
     //
     private Mapping redirectMapping;
+
+
+    /**
+     * Для перехвата
+     * до выполнения step метода
+     * @return - если false метод step не выполняется
+     */
+    public boolean preInterceptor() {
+        // здесь размещаем методы для перехвата
+        return true;
+    }
+
+
+    /**
+     * Для перехвата
+     * после выполнения step метода
+     */
+    public void postInterceptor() {
+        // здесь размещаем методы для перехвата
+    }
 
 
     /**
@@ -49,7 +66,6 @@ public class AbsHandle {
         this.update = update;
         this.inputText = globalParam.getInputText();
         this.queryData = globalParam.getQueryData();
-        this.accessLevel = globalParam.getAccessLevel();
         this.chatId = globalParam.getChatId();
         this.redirectMapping = new Mapping();
         this.step = step;
@@ -84,32 +100,6 @@ public class AbsHandle {
 
     }
 
-
-    /**
-     * Для очистки сообщения
-     * @param message - сообщение
-     */
-    public void clearMessage(Message message){
-        new ClearMessage().clear(message);
-    }
-
-    /**
-     * Для очистки сообщения
-     * @param message - сообщение
-     */
-    public void clearMessageLater(Message message){
-        new ClearMessage().clearLater(message);
-    }
-
-    /**
-     * Для очистки сообщения
-     * @param message - сообщение
-     */
-    public void clearMessageOnClick(Message message){
-        new ClearMessage().clearOnClick(message);
-    }
-
-
     /**
      * Параметры для step
      * @param chatId - для кого
@@ -117,7 +107,7 @@ public class AbsHandle {
      * @return - DataRec
      */
     public DataRec setParam(long chatId, String step){
-        return new StepParam(chatId, step).get();
+        return StepParam.send(chatId, step);
     }
 
     /**
@@ -126,7 +116,7 @@ public class AbsHandle {
      * @return - DataRec
      */
     public DataRec setParam(String step){
-        return new StepParam(chatId, step).get();
+        return StepParam.send(chatId, step);
     }
 
 
@@ -144,13 +134,50 @@ public class AbsHandle {
         } else {
 
             param.put(messageText, "requested");
-            clearMessage(bot.sendMessage(
-                    new SendMessage()
-                    .setChatId(chatId)
-                    .setText(messageText)
-            ));
+            sendMessage(messageText);
 
             throw new RuntimeException("ignore");
         }
+    }
+
+    /**
+     * Отправка сообщений с клавиатурой
+     */
+    public void sendMessage(String text) throws Exception {
+        ClearMessage.clear(
+                bot.execute(
+                        new SendMessage()
+                                .setChatId(chatId)
+                                .setText(text)
+                )
+        );
+    }
+
+    /**
+     * Отправка сообщений с клавиатурой
+     */
+    public void sendMessage(String text, Keyboard keyboard) throws Exception {
+        ClearMessage.clear(
+                bot.execute(
+                        new SendMessage()
+                                .setChatId(chatId)
+                                .setText(text)
+                                .setReplyMarkup(keyboard.generate())
+                )
+        );
+    }
+
+    /**
+     * Отправка сообщений с inline клавиатурой
+     */
+    public void sendMessage(String text, IKeyboard keyboard) throws Exception {
+        ClearMessage.clear(
+                bot.execute(
+                        new SendMessage()
+                                .setChatId(chatId)
+                                .setText(text)
+                                .setReplyMarkup(keyboard.generate())
+                )
+        );
     }
 }

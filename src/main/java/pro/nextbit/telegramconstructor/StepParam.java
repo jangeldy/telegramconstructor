@@ -32,4 +32,15 @@ public class StepParam {
     public void remove() {
         paramsMap.remove(step + chatId);
     }
+
+    public static DataRec send(long chatId, String step) {
+        DataRec params;
+        if (paramsMap.containsKey(step + chatId)){
+            params = paramsMap.get(step + chatId);
+        } else {
+            params = new DataRec();
+            paramsMap.put(step + chatId, params);
+        }
+        return params;
+    }
 }

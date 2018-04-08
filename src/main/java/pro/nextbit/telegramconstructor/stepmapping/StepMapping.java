@@ -14,9 +14,9 @@ public class StepMapping {
     private static Map<String, Mapping> commandMappingMap = new HashMap<>();
     private static String handlingPath = null;
 
-    public void initializeMapping(String packageName) throws Exception {
+    public static void initializeMapping(String packageName) throws Exception {
 
-        setHandlingPath(packageName);
+        StepMapping.handlingPath = packageName;
 
         Reflections reflections = new Reflections(packageName);
         Set<Class<? extends AbsHandle>> classes = reflections.getSubTypesOf(AbsHandle.class);
@@ -79,7 +79,6 @@ public class StepMapping {
         return stepMappingMap.get(step);
     }
 
-
     public static boolean containsCommandText(String step){
         return commandMappingMap.containsKey(step);
     }
@@ -92,7 +91,4 @@ public class StepMapping {
         return handlingPath;
     }
 
-    private void setHandlingPath(String handlingPath) {
-        StepMapping.handlingPath = handlingPath;
-    }
 }

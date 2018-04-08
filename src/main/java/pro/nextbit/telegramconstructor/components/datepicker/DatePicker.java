@@ -34,7 +34,6 @@ public class DatePicker {
         this.designate = new ArrayList<>();
         this.step = step;
         this.queryData = queryData;
-
     }
 
     public DateTime getDate(
@@ -53,7 +52,7 @@ public class DatePicker {
 
             if (isEdit) {
 
-                bot.editMessageReplyMarkup(
+                bot.execute(
                         new EditMessageReplyMarkup()
                         .setReplyMarkup(generate())
                         .setMessageId(message.getMessageId())
@@ -62,13 +61,13 @@ public class DatePicker {
 
             } else {
 
-                Message msg = bot.sendMessage(
+                Message msg = bot.execute(
                         new SendMessage()
                                 .setText(messageText)
                                 .setChatId(message.getChatId())
                                 .setReplyMarkup(generate())
                 );
-                new ClearMessage().clearLater(msg);
+                ClearMessage.clearLater(msg);
             }
 
             throw new RuntimeException("ignore");
@@ -91,7 +90,7 @@ public class DatePicker {
 
         if (queryData.containsKey("dp_sel")){
             selectedDate = new DateTime(queryData.getDate("dp_sel"));
-            new ClearMessage().remove(bot, message);
+            ClearMessage.removeAll(bot, message);
         }
 
         if (queryData.containsKey("dp_dt")){

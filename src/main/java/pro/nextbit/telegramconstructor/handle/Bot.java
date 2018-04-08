@@ -1,9 +1,11 @@
 package pro.nextbit.telegramconstructor.handle;
 
+import org.springframework.context.ApplicationContext;
 import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 
+import javax.sql.DataSource;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -12,6 +14,8 @@ public class Bot extends TelegramLongPollingBot {
     private String botUserName;
     private String botToken;
     private static Map<Long, Handling> chats = new HashMap<>();
+    private ApplicationContext context;
+    private DataSource source;
 
     @Override
     public void onUpdateReceived(Update update) {
@@ -60,6 +64,22 @@ public class Bot extends TelegramLongPollingBot {
 
     public void setBotToken(String botToken){
         this.botToken = botToken;
+    }
+
+    public ApplicationContext getAppContext() {
+        return this.context;
+    }
+
+    public void setAppContext(ApplicationContext context) {
+        this.context = context;
+    }
+
+    public DataSource getSource() {
+        return source;
+    }
+
+    public void setSource(DataSource source) {
+        this.source = source;
     }
 
 }

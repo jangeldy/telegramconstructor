@@ -49,7 +49,7 @@ public class TimePicker {
 
             if (isEdit) {
 
-                bot.editMessageReplyMarkup(
+                bot.execute(
                         new EditMessageReplyMarkup()
                                 .setReplyMarkup(generate())
                                 .setMessageId(message.getMessageId())
@@ -58,13 +58,13 @@ public class TimePicker {
 
             } else {
 
-                Message msg = bot.sendMessage(
+                Message msg = bot.execute(
                         new SendMessage()
                                 .setText(messageText)
                                 .setChatId(message.getChatId())
                                 .setReplyMarkup(generate())
                 );
-                new ClearMessage().clearLater(msg);
+                ClearMessage.clearLater(msg);
             }
 
             throw new RuntimeException("ignore");
@@ -121,7 +121,7 @@ public class TimePicker {
 
         if (queryData.containsKey("tp_sel")) {
             selectedTime = new DateTime(df.parse(queryData.getString("tp_sel")));
-            new ClearMessage().remove(bot, message);
+            ClearMessage.removeAll(bot, message);
         }
 
         queryData.remove("tp_dt");

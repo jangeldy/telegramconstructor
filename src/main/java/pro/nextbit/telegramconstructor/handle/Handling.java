@@ -2,31 +2,26 @@ package pro.nextbit.telegramconstructor.handle;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
-import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import pro.nextbit.telegramconstructor.ClearMessage;
 import pro.nextbit.telegramconstructor.GlobalParam;
 import pro.nextbit.telegramconstructor.StepParam;
-import pro.nextbit.telegramconstructor.accesslevel.AccessLevel;
-import pro.nextbit.telegramconstructor.accesslevel.AccessLevelMap;
 import pro.nextbit.telegramconstructor.database.DataRec;
 import pro.nextbit.telegramconstructor.stepmapping.Mapping;
 import pro.nextbit.telegramconstructor.stepmapping.StepMapping;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
+import javax.sql.DataSource;
+import java.lang.reflect.*;
 
 class Handling {
 
     private String step;
     private String lastStep;
     private AbsHandle handle;
-    private Logger log = LogManager.getLogger(Handling.class);
+    private Log log = LogFactory.getLog(Handling.class);
 
 
     /**
@@ -34,21 +29,18 @@ class Handling {
      * @param bot    - бот
      * @param update - объект входящего запроса
      */
-    void start(TelegramLongPollingBot bot, Update update, Message message) {
+    void start(Bot bot, Update update, Message message) {
 
         GlobalParam globalParam = getGlobalParam(update, message.getChatId());
         Mapping mapping = getMapping(update, message, globalParam.getQueryData());
 
-        if (globalParam.getAccessLevel() != AccessLevel.WITHOUT_ACCESS) {
-
-            try {
+        try {
+            mapping = handlingMethod(bot, update, globalParam, mapping);
+            while (mapping.isRedirect()) {
                 mapping = handlingMethod(bot, update, globalParam, mapping);
-                while (mapping.isRedirect()) {
-                    mapping = handlingMethod(bot, update, globalParam, mapping);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -74,7 +66,6 @@ class Handling {
 
         globalParam.setInputText(inputText);
         globalParam.setChatId(chatId);
-        globalParam.setAccessLevel(AccessLevelMap.get(chatId));
         globalParam.setQueryData(getQueryData(update));
         return globalParam;
     }
@@ -165,7 +156,7 @@ class Handling {
      * @throws Exception - Exception
      */
     private Mapping handlingMethod(
-            TelegramLongPollingBot bot, Update update,
+            Bot bot, Update update,
             GlobalParam globalParam, Mapping mapping
     ) throws Exception {
 
@@ -179,20 +170,80 @@ class Handling {
         else {
 
             Class<?> clazz = Class.forName(StepMapping.getHandlingPath() + "." + className);
-            Constructor<?> ctor = clazz.getConstructor();
-            handle = (AbsHandle) ctor.newInstance();
+            Constructor<?> constructor = clazz.getConstructor();
+            handle = (AbsHandle) constructor.newInstance();
+
+            if (bot.getAppContext() != null){
+                Field[] fields = clazz.getDeclaredFields();
+                for (Field field : fields) {
+                    setHandleRepository(bot, handle, field);
+                    setHandleService(bot, field, globalParam, mapping.getStep());
+                    setHandleDao(bot, field);
+                }
+            }
+
             return processMethod(bot, update, globalParam, mapping, clazz);
         }
     }
 
 
+    // присваивание значений repository
+    private void setHandleRepository(Bot bot, Object object,Field parentField) throws Exception {
+        if (parentField.isAnnotationPresent(HandleRepository.class)) {
+            Object repository = bot.getAppContext().getBean(parentField.getType());
+            parentField.setAccessible(true);
+            parentField.set(object, repository);
+        }
+    }
+
+
+    // присваивание значений service
+    private void setHandleService(Bot bot, Field parentField, GlobalParam globalParam, String step) throws Exception {
+        if (parentField.isAnnotationPresent(HandleService.class)) {
+            if (AbsHandleService.class.isAssignableFrom(parentField.getType())){
+                Class<?> clazz = Class.forName(parentField.getType().getName());
+                Constructor<?> constructor = clazz.getConstructor();
+                AbsHandleService service = (AbsHandleService) constructor.newInstance();
+                service.setGlobalParam(globalParam, step);
+
+                parentField.setAccessible(true);
+                parentField.set(handle, service);
+
+                Field[] fields = clazz.getDeclaredFields();
+
+                for (Field field : fields) {
+                    setHandleRepository(bot, service, field);
+                    setHandleDao(bot, field);
+                }
+            }
+        }
+    }
+
+
+    // присваивание значений dao
+    private void setHandleDao(Bot bot, Field parentField) throws Exception {
+        if (parentField.isAnnotationPresent(HandleDao.class)) {
+            String classForName = parentField.getType().getPackage().getName()
+                    + ".impl." + parentField.getType().getSimpleName() + "Impl";
+
+            Class<?> clazz = Class.forName(classForName);
+            Constructor<?> constructor = clazz.getConstructor(DataSource.class);
+            DataSource source = bot.getAppContext().getBean(DataSource.class);
+            Object dao = constructor.newInstance(source);
+
+            parentField.setAccessible(true);
+            parentField.set(handle, dao);
+        }
+    }
+
+
     private Mapping processMethod(
-            TelegramLongPollingBot bot, Update update,
+            Bot bot, Update update,
             GlobalParam globalParam,
             Mapping mapping, Class clazz
     ) throws Exception {
 
-        new ClearMessage().remove(bot, globalParam.getMessage());
+        ClearMessage.removeAll(bot, globalParam.getMessage());
         handle.setGlobalParam(bot, update, globalParam, mapping.getStep());
 
         if (step != null && !step.equals(lastStep)){
@@ -200,7 +251,10 @@ class Handling {
             new StepParam(globalParam.getChatId(), lastStep).remove();
         }
 
-        invokeMethod(clazz, mapping);
+        if (handle.preInterceptor()) {
+            invokeMethod(clazz, mapping);
+            handle.postInterceptor();
+        }
 
         if (step != null && !handle.getChangedStep().equals(step)){
             new StepParam(globalParam.getChatId(), mapping.getStep() + "_dr").remove();
@@ -224,7 +278,10 @@ class Handling {
             Method method = clazz.getMethod(mapping.getHandleMethod());
             method.invoke(handle);
         } catch (InvocationTargetException e){
-            if (!e.getTargetException().getMessage().equals("ignore")){
+            boolean isIgnore = e.getTargetException().getMessage() != null &&
+                    e.getTargetException().getMessage().equals("ignore");
+
+            if (!isIgnore){
                 e.getCause().printStackTrace();
             }
         }
@@ -247,9 +304,9 @@ class Handling {
 
         log.info(
                 redirect
-                + mapping.getHandleClassName() + " ---> "
-                + mapping.getStep() + " ---> "
-                + mapping.getCommandText()
+                + mapping.getHandleClassName() + " ---> ( "
+                + mapping.getStep() + ", "
+                + mapping.getCommandText() + " )"
         );
         log.info(" ");
     }
