@@ -17,6 +17,15 @@ public class Bot extends TelegramLongPollingBot {
     private ApplicationContext context;
     private DataSource source;
 
+    private static Bot instance;
+
+    public static Bot getInstance() {
+        if (instance == null) {
+            instance = new Bot();
+        }
+        return instance;
+    }
+
     @Override
     public void onUpdateReceived(Update update) {
 
