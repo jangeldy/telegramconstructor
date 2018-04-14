@@ -35,7 +35,7 @@ public class AbsHandle {
      * до выполнения step метода
      * @return - если false метод step не выполняется
      */
-    public boolean preInterceptor() {
+    public boolean preInterceptor() throws Exception {
         // здесь размещаем методы для перехвата
         return true;
     }
@@ -45,7 +45,7 @@ public class AbsHandle {
      * Для перехвата
      * после выполнения step метода
      */
-    public void postInterceptor() {
+    public void postInterceptor() throws Exception {
         // здесь размещаем методы для перехвата
     }
 
