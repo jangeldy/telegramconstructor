@@ -165,6 +165,8 @@ class Handling {
 
         if (handle != null && className.equals(handle.getClass().getSimpleName())) {
             Class<?> clazz = handle.getClass();
+            setFieldsValue(bot, clazz, globalParam, mapping, true);
+
             return processMethod(bot, update, globalParam, mapping, clazz);
         }
         else {
@@ -172,17 +174,25 @@ class Handling {
             Class<?> clazz = Class.forName(StepMapping.getHandlingPath() + "." + className);
             Constructor<?> constructor = clazz.getConstructor();
             handle = (AbsHandle) constructor.newInstance();
+            setFieldsValue(bot, clazz, globalParam, mapping, false);
 
-            if (bot.getAppContext() != null){
-                Field[] fields = clazz.getDeclaredFields();
-                for (Field field : fields) {
+            return processMethod(bot, update, globalParam, mapping, clazz);
+        }
+    }
+
+
+    private void setFieldsValue(Bot bot, Class clazz, GlobalParam globalParam, Mapping mapping, boolean isInstance) throws Exception {
+        if (bot.getAppContext() != null){
+            Field[] fields = clazz.getDeclaredFields();
+            for (Field field : fields) {
+                field.setAccessible(true);
+                setHandleService(bot, field, globalParam, mapping.getStep(), isInstance);
+
+                if (!isInstance) {
                     setHandleRepository(bot, handle, field);
-                    setHandleService(bot, field, globalParam, mapping.getStep());
                     setHandleDao(bot, handle, field);
                 }
             }
-
-            return processMethod(bot, update, globalParam, mapping, clazz);
         }
     }
 
@@ -198,23 +208,33 @@ class Handling {
 
 
     // присваивание значений service
-    private void setHandleService(Bot bot, Field parentField, GlobalParam globalParam, String step) throws Exception {
+    private void setHandleService(Bot bot, Field parentField, GlobalParam globalParam, String step, boolean isInstance) throws Exception {
         if (parentField.isAnnotationPresent(HandleService.class)) {
             if (AbsHandleService.class.isAssignableFrom(parentField.getType())){
-                Class<?> clazz = Class.forName(parentField.getType().getName());
-                Constructor<?> constructor = clazz.getConstructor();
-                AbsHandleService service = (AbsHandleService) constructor.newInstance();
-                service.setGlobalParam(globalParam, step);
 
-                parentField.setAccessible(true);
-                parentField.set(handle, service);
+                if (isInstance) {
 
-                Field[] fields = clazz.getDeclaredFields();
+                    AbsHandleService service = (AbsHandleService) parentField.get(handle);
+                    service.setGlobalParam(globalParam, step);
 
-                for (Field field : fields) {
-                    setHandleRepository(bot, service, field);
-                    setHandleDao(bot, service, field);
+                } else {
+
+                    Class<?> clazz = Class.forName(parentField.getType().getName());
+                    Constructor<?> constructor = clazz.getConstructor();
+                    AbsHandleService service = (AbsHandleService) constructor.newInstance();
+                    service.setGlobalParam(globalParam, step);
+
+                    parentField.setAccessible(true);
+                    parentField.set(handle, service);
+
+                    Field[] fields = clazz.getDeclaredFields();
+
+                    for (Field field : fields) {
+                        setHandleRepository(bot, service, field);
+                        setHandleDao(bot, service, field);
+                    }
                 }
+
             }
         }
     }
