@@ -178,7 +178,7 @@ class Handling {
                 for (Field field : fields) {
                     setHandleRepository(bot, handle, field);
                     setHandleService(bot, field, globalParam, mapping.getStep());
-                    setHandleDao(bot, field);
+                    setHandleDao(bot, handle, field);
                 }
             }
 
@@ -188,7 +188,7 @@ class Handling {
 
 
     // присваивание значений repository
-    private void setHandleRepository(Bot bot, Object object,Field parentField) throws Exception {
+    private void setHandleRepository(Bot bot, Object object, Field parentField) throws Exception {
         if (parentField.isAnnotationPresent(HandleRepository.class)) {
             Object repository = bot.getAppContext().getBean(parentField.getType());
             parentField.setAccessible(true);
@@ -213,7 +213,7 @@ class Handling {
 
                 for (Field field : fields) {
                     setHandleRepository(bot, service, field);
-                    setHandleDao(bot, field);
+                    setHandleDao(bot, service, field);
                 }
             }
         }
@@ -221,7 +221,7 @@ class Handling {
 
 
     // присваивание значений dao
-    private void setHandleDao(Bot bot, Field parentField) throws Exception {
+    private void setHandleDao(Bot bot, Object object, Field parentField) throws Exception {
         if (parentField.isAnnotationPresent(HandleDao.class)) {
             String classForName = parentField.getType().getPackage().getName()
                     + ".impl." + parentField.getType().getSimpleName() + "Impl";
@@ -232,7 +232,7 @@ class Handling {
             Object dao = constructor.newInstance(source);
 
             parentField.setAccessible(true);
-            parentField.set(handle, dao);
+            parentField.set(object, dao);
         }
     }
 
