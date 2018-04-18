@@ -20,7 +20,7 @@ public class Bot extends TelegramLongPollingBot {
     private static Bot instance;
 
     public static Bot getInstance() {
-        if (instance == null) {
+        if (instance == null || instance.getBotToken() == null) {
             instance = new Bot();
         }
         return instance;
@@ -28,6 +28,8 @@ public class Bot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
+
+        instance = this;
 
         try {
 
