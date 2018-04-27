@@ -16,20 +16,11 @@ public class Bot extends TelegramLongPollingBot {
     private static Map<Long, Handling> chats = new HashMap<>();
     private ApplicationContext context;
     private DataSource source;
-
     private static Bot instance;
 
-    public static Bot getInstance() {
-        if (instance == null || instance.getBotToken() == null) {
-            instance = new Bot();
-        }
-        return instance;
-    }
 
     @Override
     public void onUpdateReceived(Update update) {
-
-        instance = this;
 
         try {
 
@@ -93,4 +84,11 @@ public class Bot extends TelegramLongPollingBot {
         this.source = source;
     }
 
+    public static Bot getInstance() {
+        return instance;
+    }
+
+    public void setInstance(Bot bot) {
+        instance = bot;
+    }
 }
