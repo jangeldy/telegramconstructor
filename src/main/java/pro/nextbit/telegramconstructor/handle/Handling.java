@@ -31,7 +31,7 @@ class Handling {
      */
     void start(Bot bot, Update update, Message message) {
 
-        GlobalParam globalParam = getGlobalParam(update, message.getChatId());
+        GlobalParam globalParam = getGlobalParam(update, message);
         Mapping mapping = getMapping(update, message, globalParam.getQueryData());
 
         try {
@@ -48,15 +48,25 @@ class Handling {
     /**
      * Ищет команду по базе
      * @param update - объект входящего запроса
-     * @param chatId - chatId
+     * @param message - message
      * @return - GlobalParam
      */
-    private GlobalParam getGlobalParam(Update update, long chatId) {
+    private GlobalParam getGlobalParam(Update update, Message message) {
+
+        long chatId;
+        if (update.hasChannelPost()) {
+            chatId = update.getChannelPost().getChatId();
+        } else {
+            chatId = message.getChatId();
+        }
+
 
         GlobalParam globalParam = new GlobalParam();
         String inputText;
 
-        if (update.getMessage() == null) {
+        if (update.hasChannelPost()) {
+            inputText = update.getChannelPost().getText();
+        } else if (update.getMessage() == null) {
             inputText = update.getCallbackQuery().getMessage().getText();
             globalParam.setMessage(update.getCallbackQuery().getMessage());
         } else {
@@ -80,7 +90,10 @@ class Handling {
     private Mapping getMapping(Update update, Message message, DataRec queryData) {
 
         Mapping mapping = null;
-        if (update.getMessage() == null) {
+        if (update.hasChannelPost()) {
+            mapping = StepMapping.getMappingByStep("channelPost");
+            step = "channelPost";
+        } else if (update.getMessage() == null) {
 
             if (queryData.containsKey("step")) {
                 String qd_step = queryData.getString("step");
@@ -105,10 +118,12 @@ class Handling {
             mapping = StepMapping.getMappingByStep("defaultStep");
         }
 
-        if (message.isGroupMessage()
-                || message.isSuperGroupMessage()
-                || message.isChannelMessage()){
-            mapping = StepMapping.getMappingByStep("groupMessage");
+        if (message != null) {
+            if (message.isGroupMessage()
+                    || message.isSuperGroupMessage()
+                    || message.isChannelMessage()){
+                mapping = StepMapping.getMappingByStep("groupMessage");
+            }
         }
 
         return mapping;
@@ -123,6 +138,8 @@ class Handling {
     private DataRec getQueryData(Update update) {
 
         DataRec queryData = new DataRec();
+
+        if (update.hasChannelPost()) return queryData;
 
         if (update.getMessage() == null) {
             String queryText = update.getCallbackQuery().getData();

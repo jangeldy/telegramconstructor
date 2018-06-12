@@ -24,11 +24,13 @@ public class Bot extends TelegramLongPollingBot {
 
         try {
 
-            Handling handling;
-            Message message;
+            Handling handling = null;
+            Message message = null;
             long chatId;
 
-            if (update.getMessage() != null){
+            if (update.hasChannelPost()) {
+                chatId = update.getChannelPost().getChatId();
+            } else if (update.getMessage() != null){
                 message = update.getMessage();
                 chatId = message.getChatId();
             } else {

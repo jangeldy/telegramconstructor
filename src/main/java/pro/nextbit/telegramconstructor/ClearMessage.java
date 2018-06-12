@@ -47,10 +47,13 @@ public class ClearMessage {
      * @param message - сообщение
      */
     public static void removeAll(TelegramLongPollingBot bot, Message message) {
-        ClearMessage clearMessage = new ClearMessage();
-        clearMessage.remove(bot, message.getChatId(), clearMessage.get(message.getChatId()));
-        clearMessage.remove(bot, message.getChatId(), clearMessage.getAsLater(message));
-        clearMessage.remove(bot, message.getChatId(), clearMessage.getOnClick(message));
+
+        if (message != null) {
+            ClearMessage clearMessage = new ClearMessage();
+            clearMessage.remove(bot, message.getChatId(), clearMessage.get(message.getChatId()));
+            clearMessage.remove(bot, message.getChatId(), clearMessage.getAsLater(message));
+            clearMessage.remove(bot, message.getChatId(), clearMessage.getOnClick(message));
+        }
     }
 
 
